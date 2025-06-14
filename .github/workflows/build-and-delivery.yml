@@ -1,0 +1,44 @@
+# Имя рабочего процесса
+name: Build and Delivery
+
+# Событие, которое запускает рабочий процесс
+on:
+  workflow_run:
+    # Запускается только после успешного завершения рабочего процесса "Test Python app"
+    # в ветке 'main'
+    workflows: ["Test Python app"]
+    types: [completed]
+    branches:
+      - main
+
+# Задания рабочего процесса
+jobs:
+  build_and_publish:
+    # Тип раннера (виртуальной машины)
+    runs-on: ubuntu-latest
+    # Условие для запуска задания: только если предыдущий рабочий процесс завершился успешно
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    # Шаги задания
+    steps:
+    - name: Checkout # Шаг для получения кода из репозитория
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx # Настройка Docker Buildx для сборки образов
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub # Шаг для логина в Docker Hub
+      uses: docker/login-action@v3
+      with:
+        # Переменная Docker Hub Username
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        # Секрет Docker Hub Token (пароль)
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker image # Шаг для сборки и публикации образа Docker
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true # Указываем, что образ нужно опубликовать
+        # Тег образа: <ваш_username_docker_hub>/my-app:latest
+        tags: ${{ vars.DOCKERHUB_USERNAME }}/my-app:latest
