@@ -3,11 +3,8 @@ name: Build and Delivery
 
 # Событие, которое запускает рабочий процесс
 on:
-  workflow_run:
-    # Запускается только после успешного завершения рабочего процесса "Test Python app"
-    # в ветке 'main'
-    workflows: ["Test Python app"]
-    types: [completed]
+  # Запускается при любом push в ветку main
+  push:
     branches:
       - main
 
@@ -16,9 +13,8 @@ jobs:
   build_and_publish:
     # Тип раннера (виртуальной машины)
     runs-on: ubuntu-latest
-    # Условие для запуска задания: только если предыдущий рабочий процесс завершился успешно
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
+    # Условие 'if' больше не нужно, так как мы не зависим от другого процесса
+    
     # Шаги задания
     steps:
     - name: Checkout # Шаг для получения кода из репозитория
@@ -38,7 +34,9 @@ jobs:
     - name: Build and Push Docker image # Шаг для сборки и публикации образа Docker
       uses: docker/build-push-action@v6
       with:
+        # Указываем, что Dockerfile находится в корне
         context: .
-        push: true # Указываем, что образ нужно опубликовать
+        # Указываем, что образ нужно опубликовать
+        push: true
         # Тег образа: <ваш_username_docker_hub>/my-app:latest
         tags: ${{ vars.DOCKERHUB_USERNAME }}/my-app:latest
